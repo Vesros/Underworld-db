@@ -14,9 +14,10 @@
             const m = location.hash && location.hash.match(/invite_token=([^&]+)/);
             if (m) {
                 window.netlifyIdentity.acceptInvite(m[1], true)
-                    .then(() => window.netlifyIdentity.open('login'))
-                    .catch(() => window.netlifyIdentity.open('login'));
+                .then(() => window.netlifyIdentity.open('login'))
+                .catch(() => window.netlifyIdentity.open('login'));
             }
+            // If already logged in, do nothing; if not, Decap will trigger login when needed
             window.netlifyIdentity.on('login', () => location.replace('/admin/'));
         })();
     </script>
