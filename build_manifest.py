@@ -1,9 +1,8 @@
 import hashlib, json, os, time
 
-# >>> SET THIS ONCE <<<
-GITHUB_USER = "<your-github-user>"      # e.g. "rasmuslofstrom"
+GITHUB_USER = "Vesros"
 REPO_NAME   = "Underworld-db"
-CDN_FOLDER  = "cdn"  # repo subfolder where versioned files are written
+CDN_FOLDER  = "cdn"
 
 SRC = "db_src"
 ver = time.strftime("%Y.%m.%d.%H%M")
@@ -19,7 +18,7 @@ def sha256(path):
     return h.hexdigest()
 
 files = []
-for name in os.listdir(SRC):
+for name in sorted(os.listdir(SRC)):
     if not name.lower().endswith(".json"):
         continue
     src = os.path.join(SRC, name)
@@ -36,7 +35,6 @@ for name in os.listdir(SRC):
     })
 
 manifest = {"version": ver, "files": files}
-
 with open("manifest.json", "w", encoding="utf-8") as f:
     json.dump(manifest, f, ensure_ascii=False, separators=(",",":"))
 
