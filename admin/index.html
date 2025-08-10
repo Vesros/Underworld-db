@@ -4,86 +4,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Admin</title>
-    <style>
-        #fatal {
-            position: fixed;
-            inset: 0;
-            display: none;
-            place-items: center;
-            background: #111;
-            color: #eee;
-        }
-
-            #fatal > div {
-                max-width: 720px;
-                padding: 24px;
-                border: 1px solid #444;
-                border-radius: 12px;
-                background: #181818;
-                font: 14px/1.5 system-ui,Arial;
-            }
-
-            #fatal code {
-                background: #222;
-                padding: 2px 6px;
-                border-radius: 6px;
-            }
-    </style>
 </head>
 <body>
-    <div id="fatal">
-        <div>
-            <h2>Admin failed to load</h2>
-            <p>We couldn’t reach a required resource (network/Git Gateway). No automatic retries will be attempted.</p>
-            <p>Try a hard refresh, or check Netlify Identity & Git Gateway status.</p>
-            <p><small id="fatal-detail"></small></p>
-        </div>
-    </div>
-
     <!-- Identity widget -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script src="https://unpkg.com/netlify-cms@^2.0.0/dist/netlify-cms.js"></script>
+
     <script>
-        (function () {
-            const fatal = (msg) => {
-                const d = document.getElementById('fatal');
-                document.getElementById('fatal-detail').textContent = msg || '';
-                d.style.display = 'grid';
-            };
-
-            // Fail-fast fetch wrapper (10s timeout; no internal retry)
-            const origFetch = window.fetch.bind(window);
-            window.fetch = function (input, init) {
-                const controller = new AbortController();
-                const t = setTimeout(() => controller.abort(), 10000);
-                const opts = Object.assign({}, init || {}, { signal: controller.signal });
-                return origFetch(input, opts).finally(() => clearTimeout(t)).catch(err => {
-                    if (err?.name === 'AbortError' || /Failed to fetch|NetworkError|TypeError/i.test(String(err))) {
-                        fatal('Network request failed or timed out while loading: ' + (input && (input.url || input)));
-                    }
-                    throw err;
-                });
-            };
-
-            // Identity: handle invite tokens, but don't force redirects
-            if (window.netlifyIdentity) {
-                const m = location.hash && location.hash.match(/invite_token=([^&]+)/);
-                if (m) {
-                    window.netlifyIdentity.acceptInvite(m[1], true).catch(() => {
-                        fatal('Invite acceptance failed.');
+        // Handle invite tokens
+        if (window.netlifyIdentity) {
+            window.netlifyIdentity.on('init', user => {
+                if (!user) {
+                    window.netlifyIdentity.on('login', () => {
+                        document.location.reload();
                     });
                 }
-                // Optional: if you want to see identity errors
-                window.netlifyIdentity.on('error', e => fatal('Identity error: ' + (e && e.message || 'unknown')));
-            }
+            });
 
-            // Manual init BEFORE CMS loads
-            window.CMS_MANUAL_INIT = true;
-            window.CMS_CONFIG = {
-                backend: { name: "git-gateway", branch: "main" },
-                site_url: "https://underworld-db.netlify.app",
-                display_url: "https://underworld-db.netlify.app",
-                media_folder: "admin/media",
-                public_folder: "/admin/media",
-                collections: [
-                    {
-                        name: "gamedata",
+            // Check for invite token
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('invite_token');
+            if (token) {
+                window.netlifyIdentity.acceptInvite(token);
+            }
+        }
+    </script>
+</body>
+</html>

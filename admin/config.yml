@@ -7,7 +7,6 @@ display_url: https://underworld-db.netlify.app
 
 media_folder: "admin/media"
 public_folder: "/admin/media"
-# publish_mode: editorial_workflow  # keep off until login is stable
 
 collections:
   - name: "gamedata"
