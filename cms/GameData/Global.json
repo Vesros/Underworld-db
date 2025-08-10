@@ -1,1 +1,6 @@
-{ "Id":"Global", "Version":"0.1.0", "LastPatchDate":"2025-08-10", "BuildType":"Testing" }
+{
+  "Id": "Global",
+  "Version": "0.1.1",
+  "LastPatchDate": "2025-08-10",
+  "BuildType": "Release"
+}
