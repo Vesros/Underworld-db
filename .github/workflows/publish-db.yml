@@ -30,14 +30,17 @@ jobs:
           ver=$(python build_manifest.py | tail -n1)
           echo "ver=$ver" >> $GITHUB_OUTPUT
 
-      - name: Pull latest changes before committing
+      - name: Commit outputs and tag
         run: |
           git config user.name  "db-bot"
           git config user.email "db-bot@users.noreply.github.com"
-          git pull origin main --rebase
-
-      - name: Commit outputs and tag
-        run: |
+          
+          # Stash any changes, pull latest, then pop stash
+          git stash push -m "build artifacts" || true
+          git pull origin main --rebase || git pull origin main
+          git stash pop || true
+          
+          # Add and commit the built files
           git add db_src manifest.json cdn
           git commit -m "db ${{ steps.build.outputs.ver }}" || echo "no changes"
           git tag -f "db-${{ steps.build.outputs.ver }}"
