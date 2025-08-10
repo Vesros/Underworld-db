@@ -4,73 +4,86 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Admin</title>
+    <style>
+        #fatal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: #111;
+            color: #eee;
+        }
+
+            #fatal > div {
+                max-width: 720px;
+                padding: 24px;
+                border: 1px solid #444;
+                border-radius: 12px;
+                background: #181818;
+                font: 14px/1.5 system-ui,Arial;
+            }
+
+            #fatal code {
+                background: #222;
+                padding: 2px 6px;
+                border-radius: 6px;
+            }
+    </style>
 </head>
 <body>
-    <!-- 1) Identity widget (for login + invite handling) -->
+    <div id="fatal">
+        <div>
+            <h2>Admin failed to load</h2>
+            <p>We couldn’t reach a required resource (network/Git Gateway). No automatic retries will be attempted.</p>
+            <p>Try a hard refresh, or check Netlify Identity & Git Gateway status.</p>
+            <p><small id="fatal-detail"></small></p>
+        </div>
+    </div>
+
+    <!-- Identity widget -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script>
         (function () {
-            if (!window.netlifyIdentity) return;
-            const m = location.hash && location.hash.match(/invite_token=([^&]+)/);
-            if (m) {
-                window.netlifyIdentity.acceptInvite(m[1], true)
-                    .then(() => window.netlifyIdentity.open('login'))
-                    .catch(() => window.netlifyIdentity.open('login'));
+            const fatal = (msg) => {
+                const d = document.getElementById('fatal');
+                document.getElementById('fatal-detail').textContent = msg || '';
+                d.style.display = 'grid';
+            };
+
+            // Fail-fast fetch wrapper (10s timeout; no internal retry)
+            const origFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                const controller = new AbortController();
+                const t = setTimeout(() => controller.abort(), 10000);
+                const opts = Object.assign({}, init || {}, { signal: controller.signal });
+                return origFetch(input, opts).finally(() => clearTimeout(t)).catch(err => {
+                    if (err?.name === 'AbortError' || /Failed to fetch|NetworkError|TypeError/i.test(String(err))) {
+                        fatal('Network request failed or timed out while loading: ' + (input && (input.url || input)));
+                    }
+                    throw err;
+                });
+            };
+
+            // Identity: handle invite tokens, but don't force redirects
+            if (window.netlifyIdentity) {
+                const m = location.hash && location.hash.match(/invite_token=([^&]+)/);
+                if (m) {
+                    window.netlifyIdentity.acceptInvite(m[1], true).catch(() => {
+                        fatal('Invite acceptance failed.');
+                    });
+                }
+                // Optional: if you want to see identity errors
+                window.netlifyIdentity.on('error', e => fatal('Identity error: ' + (e && e.message || 'unknown')));
             }
-            window.netlifyIdentity.on('login', () => location.replace('/admin/'));
-        })();
-    </script>
 
-    <!-- 2) Manual init must be defined BEFORE Decap CMS is loaded -->
-    <script>
-      window.CMS_MANUAL_INIT = true;
-      window.CMS_CONFIG = {
-        backend: { name: "git-gateway", branch: "main" },
-        site_url: "https://underworld-db.netlify.app",
-        display_url: "https://underworld-db.netlify.app",
-        media_folder: "admin/media",
-        public_folder: "/admin/media",
-        collections: [
-          {
-            name: "gamedata",
-            label: "Game Data",
-            label_singular: "Row",
-            folder: "cms/GameData",
-            create: false,
-            format: "json",
-            extension: "json",
-            slug: "{{Id}}",
-            editor: { preview: false },
-            fields: [
-              { label: "Id", name: "Id", widget: "string", default: "Global", pattern: ["^Global$", "Must be Global"] },
-              { label: "Version", name: "Version", widget: "string" },
-              { label: "LastPatchDate (YYYY-MM-DD)", name: "LastPatchDate", widget: "string", pattern: ["^\\d{4}-\\d{2}-\\d{2}$","Use YYYY-MM-DD"] },
-              { label: "BuildType", name: "BuildType", widget: "select", options: ["Testing","Release","Live"], default: "Testing" }
-            ]
-          },
-          {
-            name: "balancedata",
-            label: "Balance Data",
-            label_singular: "Row",
-            folder: "cms/BalanceData",
-            create: false,
-            format: "json",
-            extension: "json",
-            slug: "{{Id}}",
-            editor: { preview: false },
-            fields: [
-              { label: "Id", name: "Id", widget: "string", default: "Global", pattern: ["^Global$", "Must be Global"] },
-              { label: "GlobalExpGainModifier", name: "GlobalExpGainModifier", widget: "number", value_type: "float", min: 0, step: 0.01, default: 1.0 },
-              { label: "GlobalDamageCausedModifier", name: "GlobalDamageCausedModifier", widget: "number", value_type: "float", min: 0, step: 0.01, default: 1.0 }
-            ]
-          }
-        ]
-      };
-    </script>
-
-    <!-- 3) Load Decap CMS and initialize from inline config -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"
-            onload="CMS.init({ config: window.CMS_CONFIG });">
-    </script>
-</body>
-</html>
+            // Manual init BEFORE CMS loads
+            window.CMS_MANUAL_INIT = true;
+            window.CMS_CONFIG = {
+                backend: { name: "git-gateway", branch: "main" },
+                site_url: "https://underworld-db.netlify.app",
+                display_url: "https://underworld-db.netlify.app",
+                media_folder: "admin/media",
+                public_folder: "/admin/media",
+                collections: [
+                    {
+                        name: "gamedata",
