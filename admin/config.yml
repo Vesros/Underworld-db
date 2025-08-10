@@ -5,11 +5,36 @@ backend:
 site_url: https://underworld-db.netlify.app
 display_url: https://underworld-db.netlify.app
 
-# comment out editorial workflow to reduce API surface while we stabilize login
-# publish_mode: editorial_workflow
-
 media_folder: "admin/media"
 public_folder: "/admin/media"
+# publish_mode: editorial_workflow  # keep off until login is stable
 
-# (optional) restrict to Identity roles
-# backend roles are managed on Netlify; this just documents intent
+collections:
+  - name: "gamedata"
+    label: "Game Data"
+    label_singular: "Row"
+    folder: "cms/GameData"
+    create: false
+    format: "json"
+    extension: "json"
+    slug: "{{Id}}"
+    editor: { preview: false }
+    fields:
+      - { label: "Id", name: "Id", widget: "string", default: "Global", pattern: ["^Global$", "Must be Global"] }
+      - { label: "Version", name: "Version", widget: "string" }
+      - { label: "LastPatchDate (YYYY-MM-DD)", name: "LastPatchDate", widget: "string", pattern: ["^\\d{4}-\\d{2}-\\d{2}$","Use YYYY-MM-DD"] }
+      - { label: "BuildType", name: "BuildType", widget: "select", options: ["Testing","Release","Live"], default: "Testing" }
+
+  - name: "balancedata"
+    label: "Balance Data"
+    label_singular: "Row"
+    folder: "cms/BalanceData"
+    create: false
+    format: "json"
+    extension: "json"
+    slug: "{{Id}}"
+    editor: { preview: false }
+    fields:
+      - { label: "Id", name: "Id", widget: "string", default: "Global", pattern: ["^Global$", "Must be Global"] }
+      - { label: "GlobalExpGainModifier", name: "GlobalExpGainModifier", widget: "number", value_type: "float", min: 0, step: 0.01, default: 1.0 }
+      - { label: "GlobalDamageCausedModifier", name: "GlobalDamageCausedModifier", widget: "number", value_type: "float", min: 0, step: 0.01, default: 1.0 }
