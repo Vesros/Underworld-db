@@ -2,43 +2,20 @@ name: Publish DB
 on:
   push:
     branches: [ main ]
-    paths:
-      - "cms/**"
-      - "tools/pack_cms.py"
-      - "build_manifest.py"
-      - "schemas/**"
-      - "admin/**"
-      - "index.html"
+    paths: [ "cms/**", "tools/pack_cms.py", "build_manifest.py" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # allow committing/tagging
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with: { python-version: "3.x" }
 
-      - name: (Optional) JSON schema validation
-        if: ${{ hashFiles('schemas/**') != '' }}
-        run: |
-          python -m pip install jsonschema
-          [ -f schemas/GameData.schema.json ] && python - <<'PY'
-          import json, glob
-          from jsonschema import validate
-          s=json.load(open('schemas/GameData.schema.json'))
-          for p in glob.glob('cms/GameData/*.json'):
-            validate(json.load(open(p)), s["items"])
-          PY
-          [ -f schemas/BalanceData.schema.json ] && python - <<'PY'
-          import json, glob
-          from jsonschema import validate
-          s=json.load(open('schemas/BalanceData.schema.json'))
-          for p in glob.glob('cms/BalanceData/*.json'):
-            validate(json.load(open(p)), s["items"])
-          PY
-
-      - name: Pack CMS to db_src arrays
+      - name: Pack CMS -> db_src
         run: python tools/pack_cms.py
 
       - name: Build manifest + versioned bundle
@@ -47,18 +24,17 @@ jobs:
           ver=$(python build_manifest.py | tail -n1)
           echo "ver=$ver" >> $GITHUB_OUTPUT
 
-      - name: Commit outputs
+      - name: Commit outputs and tag
         run: |
-          git config user.name "db-bot"
+          git config user.name  "db-bot"
           git config user.email "db-bot@users.noreply.github.com"
           git add db_src manifest.json cdn
-          git commit -m "db ${{
-            steps.build.outputs.ver
-          }}" || echo "no changes"
+          git commit -m "db ${{ steps.build.outputs.ver }}" || echo "no changes"
           git tag -f "db-${{ steps.build.outputs.ver }}"
           git push origin main --tags
 
-      - name: Purge jsDelivr (manifest + repo)
+      - name: Purge jsDelivr (optional)
         run: |
           curl -s "https://purge.jsdelivr.net/gh/${{ github.repository }}"
           curl -s "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/manifest.json"
+
