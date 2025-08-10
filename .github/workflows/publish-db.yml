@@ -9,8 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # allow committing/tagging
+      actions: write    # allow updating workflows
+      # Alternative: use this broader permission instead of the above two
+      # workflows: write  # allow modifying workflow files
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Fetch full history to avoid push conflicts
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with: { python-version: "3.x" }
@@ -24,10 +30,14 @@ jobs:
           ver=$(python build_manifest.py | tail -n1)
           echo "ver=$ver" >> $GITHUB_OUTPUT
 
-      - name: Commit outputs and tag
+      - name: Pull latest changes before committing
         run: |
           git config user.name  "db-bot"
           git config user.email "db-bot@users.noreply.github.com"
+          git pull origin main --rebase
+
+      - name: Commit outputs and tag
+        run: |
           git add db_src manifest.json cdn
           git commit -m "db ${{ steps.build.outputs.ver }}" || echo "no changes"
           git tag -f "db-${{ steps.build.outputs.ver }}"
@@ -37,4 +47,3 @@ jobs:
         run: |
           curl -s "https://purge.jsdelivr.net/gh/${{ github.repository }}"
           curl -s "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/manifest.json"
-
