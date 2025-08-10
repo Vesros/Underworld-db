@@ -1,26 +1,36 @@
 <!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Admin</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Underworld DB Admin</title>
+    <style>
+        body {
+            font: 16px/1.4 system-ui,Arial;
+            margin: 40px
+        }
+
+        a {
+            font-weight: 600
+        }
+    </style>
 </head>
 <body>
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <h1>Underworld Database</h1>
+    <p><a href="/admin/">Open Admin</a></p>
+
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script>
-      (function () {
-        if (!window.netlifyIdentity) return;
-        // If the invite link lands here, accept it
-        const m = location.hash.match(/invite_token=([^&]+)/);
-        if (m) {
-          window.netlifyIdentity.acceptInvite(m[1], true) // true => set password in widget
-            .then(() => window.netlifyIdentity.open('login'))
-            .catch(() => window.netlifyIdentity.open('login'));
-        }
-        // After login, send user back to /admin
-        window.netlifyIdentity.on('login', () => { window.location.replace('/admin/'); });
-      })();
+        (function () {
+            if (!window.netlifyIdentity) return;
+            const m = location.hash && location.hash.match(/invite_token=([^&]+)/);
+            if (m) {
+                window.netlifyIdentity.acceptInvite(m[1], true)
+                    .then(() => location.replace('/admin/'))
+                    .catch(() => location.replace('/admin/'));
+            }
+            window.netlifyIdentity.on('login', () => location.replace('/admin/'));
+        })();
     </script>
 </body>
 </html>
