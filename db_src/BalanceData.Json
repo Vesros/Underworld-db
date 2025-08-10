@@ -1,2 +1,7 @@
-
-// TODO
+[
+    {
+        "Id": "Global",
+        "GlobalExpGainModifier": 1.0,
+        "GlobalDamageCausedModifier": 1.0
+    }
+]
