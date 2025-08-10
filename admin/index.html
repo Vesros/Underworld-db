@@ -1,9 +1,26 @@
 <!doctype html>
 <html>
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin</title>
-  </head>
-  <body>
+</head>
+<body>
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
-  </body>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+        (function () {
+            if (!window.netlifyIdentity) return;
+            // If the invite link lands here, accept it
+            const m = location.hash.match(/invite_token=([^&]+)/);
+            if (m) {
+                window.netlifyIdentity.acceptInvite(m[1], true) // true => set password in widget
+                    .then(() => window.netlifyIdentity.open('login'))
+                    .catch(() => window.netlifyIdentity.open('login'));
+            }
+            // After login, send user back to /admin
+            window.netlifyIdentity.on('login', () => { window.location.replace('/admin/'); });
+        })();
+    </script>
+</body>
 </html>
